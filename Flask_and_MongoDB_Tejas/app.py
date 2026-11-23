@@ -11,6 +11,31 @@ DATA_FILE = os.path.join(BASE_DIR, "data.json")
 client = MongoClient(MONGO_URI)
 db = client["mydatabase"] 
 collection = db["users"]  
+todo_collection = db["todos"]
+
+@app.route("/submittodoitem", methods=["POST"])
+def submit_todo_item():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No data provided."}), 400
+
+    item_name = data.get("itemName", "").strip()
+    item_description = data.get("itemDescription", "").strip()
+
+    if not item_name or not item_description:
+        return jsonify({"error": "Both Item Name and Item Description are required."}), 400
+
+    try:
+        todo_collection.insert_one({
+            "itemName": item_name,
+            "itemDescription": item_description
+        })
+        return jsonify({"message": "To-Do item added successfully!"}), 201
+    except PyMongoError as e:
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 @app.route("/api", methods=["GET"])
 def get_data():
